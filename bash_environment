@@ -8,5 +8,5 @@ export NVM_DIR=$HOME/.nvm
 
 # Ruby Version Manager - Needs to be last thing loaded (for all bash init things)
 # in order to avoid a stupid error : http://stackoverflow.com/questions/18276701/getting-warning-path-is-not-properly-set-up-when-doing-rvm-use-2-0-0-defaul
-# PATH=$PATH:$HOME/.rvm/bin # Add RVM to PATH for scripting
-# [ -s "$HOME/.rvm/scripts/rvm" ] && source "$HOME/.rvm/scripts/rvm" # Load RVM into a shell session *as a function*
+PATH=$PATH:$HOME/.rvm/bin # Add RVM to PATH for scripting
+[ -s "$HOME/.rvm/scripts/rvm" ] && source "$HOME/.rvm/scripts/rvm" # Load RVM into a shell session *as a function*

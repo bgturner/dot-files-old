@@ -84,6 +84,11 @@ nvm alias default $nodeversion
 cecho "Testing default node installation" blue bold; echo " (should be $nodeversion)"
 node --version
 
+# Install RVM, Ruby, and Sass
+gpg --keyserver hkp://keys.gnupg.net --recv-keys D39DC0E3
+curl -sSL https://get.rvm.io | bash -s stable
+rvm install ruby
+gem install sass
 
 # Add PPAs
 sudo add-apt-repository "ppa:dylanmccall/hamster-time-tracker-git-stable"
