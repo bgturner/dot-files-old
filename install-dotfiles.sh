@@ -10,7 +10,7 @@ dir=~/.dot-files
 backupDir=~/.dot-files/_backup
 
 # list of files/folders to symlink in homedir
-files="bashrc gitconfig gitignore"
+files="bashrc gitconfig gitignore vimrc vim"
 
 
 # Create the backup folder for our dotfiles
