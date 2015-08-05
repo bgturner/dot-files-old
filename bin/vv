@@ -1,27 +1,41 @@
 #!/usr/bin/env bash
 
-# =============================================================================
+#
 # Variable VVV - A VVV Site Setup Script
 # By Brad Parbs <brad@bradparbs.com>
 # Originally by Alison Barrett <alison@barre.tt>
-# https://github.com/bradp/vvv-site-wizard
 #
-# Version 1.6.0
+# Version 1.7.2
 #
-# This script automates the creation & deletion of new WordPress sites using
 # Varying Vagrant Vagrants (https://github.com/Varying-Vagrant-Vagrants/VVV).
 #
 #	 ██    ██ ██    ██
 #	░██   ░██░██   ░██ 	  ▓▓▓▓▓▓▓▓▓▓
 #	░░██ ░██ ░░██ ░██ 	 ░▓ author ▓ Brad Parbs <brad@bradparbs.com>
-#	 ░░████   ░░████     ░▓ github ▓ http://github.com/bradp/vv
-#	  ░░██     ░░██      ░▓▓▓▓▓▓▓▓▓▓
-#	   ░░       ░░   	 ░░░░░░░░░░
+#	 ░░████   ░░████         ░▓ github ▓ http://github.com/bradp/vv
+#	  ░░██     ░░██          ░▓▓▓▓▓▓▓▓▓▓
+#	   ░░       ░░   	  ░░░░░░░░░░
 #
+# This script automates the creation & deletion of new WordPress sites using
+# Varying Vagrant Vagrants (https://github.com/Varying-Vagrant-Vagrants/VVV).
 #
-# =============================================================================
-
-version_number=1.6.0
+# Copyright (C) 2015 Brad Parbs
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.1.6.0
+#
+version_number=1.7.2
 
 if [[ ! -z $(which tput) ]]; then
 	normal=$(tput sgr0)
@@ -34,8 +48,81 @@ if [[ ! -z $(which tput) ]]; then
 	cyan=$(tput setaf 6)
 fi
 
+
+about() {
+	cat <<ABOUT
+	${magenta}
+	 ██    ██ ██    ██
+	░██   ░██░██   ░██ 	 ▓▓▓▓▓▓▓▓▓▓
+	░░██ ░██ ░░██ ░██  	░▓ author ▓  Brad Parbs <brad@bradparbs.com>
+	 ░░████   ░░████  	░▓ github ▓  http://github.com/bradp/vv
+	  ░░██     ░░██  	░▓▓▓▓▓▓▓▓▓▓
+	   ░░       ░░  	░░░░░░░░░░
+${normal}
+ABOUT
+}
+
+
+# Usage: show_help [exit_code]
+# Example: show_help 254
+show_help () {
+    cat <<HELP
+
+${bold} USAGE: ${normal}
+    vv [--help|-h] [--version] [--about] [--path|-p <path>] [--force-path|-fp] <command> [<site-options>] ...
+
+${bold} OPTIONS: ${normal}
+    --help, -h 			Show this help and usage
+    --version 			Show current vv version
+    --about 			Show project info
+    --path, -p 			Path to VVV installation
+    --force-path, -fp 		Override vv auto-VVV locating
+    --force-sites-folder, -fsf 	Override sites folder directory locating
+    --use_defaults		Accept all default options and skip the wizard
+
+${bold} COMMANDS: ${normal}
+
+    list 			List all VVV sites
+    create 			Create a new site
+    remove 			Remove a site
+    vagrant, v 			Pass vagrant command through to VVV
+    deployment-create		Create a deployment
+    deployment-remove 		Remove a deployment
+    deployment-config 		Manually configure deployment
+    blueprint-init 		Initialize blueprint file
+
+${bold} SITE OPTIONS: ${normal}
+    --domain, -d 		Domain of new site
+    --live-url, -u 		Live URL of site
+    --files, -f 		Do not provision Vagrant, just create the site directory and files
+    --images, -i 		Load images by proxy from the live site
+    --name, -n 			Desired name for the site directory (e.g. mysite)
+    --web-root, -wr 		Subdirectory used for web server root
+    --wp-version, -wv 		Version of WordPress to install
+    --debug, -x 		Turn on WP_DEBUG and WP_DEBUG_LOG
+    --multisite, -m 		Install as a multisite
+    --sample-content, -sc 	Add sample content to site
+    --username  		Admin username
+    --password  		Admin password
+    --email  			Admin email
+    --git-repo, -gr  		Git repo to clone as wp-content
+    --blueprint, -b 		Name of blueprint to use
+    --blank			Creates blank VVV site, with no WordPress
+    --blank-with-db		Adds a blank VVV site, with a database
+    --wpskeleton, --skel 	Creates a new site with the structure of WP Skeleton
+    --database, -db 		Import a local database file
+    --remove-defaults, -rd 	Remove default themes and plugins
+
+${bold} EXAMPLE:${normal}
+    vv create --domain mysite.dev --name mysite --debug
+    vv create -d mysite.dev -n mysite -x
+
+HELP
+}
+
+
 version () {
-echo "vv version $version_number"
+	echo "vv version $version_number"
 }
 
 # Usage: info "message"
@@ -83,7 +170,7 @@ fail () {
 check_for_update () {
 	if [[ ! -z $(which curl) ]]; then
 		github_version=$(curl -s https://api.github.com/repos/bradp/vv/tags | grep "\"name\": \"" | head -n 1 | sed 's/"name": "//' | sed 's/",//' | sed 's/ //g' )
-		if [[ ! $version_number = $github_version ]]; then
+		if [[ ! "$version_number" = "$github_version" ]]; then
 			info "Your version of vv does not match the current Github version. Please update with vv --update"
 		fi
 	fi
@@ -118,7 +205,7 @@ update_vv () {
 
 vv_bootstrap_update () {
 	github_version=$(curl -s https://api.github.com/repos/bradp/vv/tags | grep "\"name\": \"" | head -n 1 | sed 's/"name": "//' | sed 's/",//' | sed 's/ //g' )
-	download_link="https://github.com/bradp/vv/archive/"$github_version".tar.gz"
+	download_link=https://github.com/bradp/vv/archive/"$github_version".tar.gz
 	vv_install_location=$(which vv)
 	curl -L -o ~/"$github_version".tar.gz "$download_link" 2>/dev/null
 	tar -C ~/ -zxvf ~/"$github_version".tar.gz 2>/dev/null
@@ -141,7 +228,7 @@ auto_update_main () {
 			if [[ $epoch_diff -gt $epoch_target ]]; then
 				info "vv is out of date. Checking for update."
 				github_version=$(curl -s https://api.github.com/repos/bradp/vv/tags | grep "\"name\": \"" | head -n 1 | sed 's/"name": "//' | sed 's/",//' | sed 's/ //g' )
-				if [[ ! $version_number = $github_version ]]; then
+				if [[ ! "$version_number" = "$github_version" ]]; then
 					update_vv
 				fi
 
@@ -154,7 +241,7 @@ auto_update_main () {
 
 _current_epoch() {
   seconds=$(date +%s)
-  echo $(($seconds/60/60/24))
+  echo $((seconds/60/60/24))
 }
 
 _update_vv_update() {
@@ -195,75 +282,6 @@ ask () {
         esac
 
     done
-}
-
-about() {
-	cat <<ABOUT
-	${magenta}
-	 ██    ██ ██    ██
-	░██   ░██░██   ░██ 	 ▓▓▓▓▓▓▓▓▓▓
-	░░██ ░██ ░░██ ░██  	░▓ author ▓  Brad Parbs <brad@bradparbs.com>
-	 ░░████   ░░████  	░▓ github ▓  http://github.com/bradp/vv
-	  ░░██     ░░██  	░▓▓▓▓▓▓▓▓▓▓
-	   ░░       ░░  	░░░░░░░░░░
-${normal}
-ABOUT
-}
-
-
-# Usage: show_help [exit_code]
-# Example: show_help 254
-show_help () {
-    cat <<HELP
-
-${bold} USAGE: ${normal}
-    vv [--help|-h] [--version] [--about] [--path|-p <path>] [--force-path|-fp] <command> [<site-options>] ...
-
-${bold} OPTIONS: ${normal}
-    --help, -h 			Show this help and usage
-    --version 			Show current vv version
-    --about 			Show project info
-    --path, -p 			Path to VVV installation
-    --force_path, -fp 		Override vv auto-VVV locating
-    --use_defaults		Accept all default options and skip the wizard
-
-${bold} COMMANDS: ${normal}
-
-    list 			List all VVV sites
-    create 			Create a new site
-    remove 			Remove a site
-    vagrant, v 			Pass vagrant command through to VVV
-    deployment-create		Create a deployment
-    deployment-remove 		Remove a deployment
-    deployment-config 		Manually configure deployment
-    blueprint-init 		Initialize blueprint file
-
-${bold} SITE OPTIONS: ${normal}
-    --domain, -d 		Domain of new site
-    --live-url, -u 		Live URL of site
-    --files, -f 		Do not provision Vagrant, just create the site directory and files
-    --images, -i 		Load images by proxy from the live site
-    --name, -n 			Desired name for the site directory (e.g. mysite)
-    --web-root, -wr 		Subdirectory used for web server root
-    --wp-version, -wv 		Version of WordPress to install
-    --debug, -x 		Turn on WP_DEBUG and WP_DEBUG_LOG
-    --multisite, -m 		Install as a multisite
-    --sample-content, -sc 	Add sample content to site
-    --username  		Admin username
-    --password  		Admin password
-    --email  			Admin email
-    --git-repo  		Git repo to clone as wp-content
-    --blueprint, -b 		Name of blueprint to use
-    --blank			Creates blank VVV site, with no WordPress
-    --wpskeleton, --skel 	Creates a new site with the structure of WP Skeleton
-    -db|--database 	Import a local database file
-
-
-${bold} EXAMPLE:${normal}
-    vv create --domain mysite.dev --name mysite --debug
-    vv create -d mysite.dev -n mysite -x
-
-HELP
 }
 
 argument_expected() {
@@ -335,7 +353,7 @@ get_vvv_path(){
 			error "Path specified is not a VVV root directory. Where is VVV installed?"
 			unset path
 
-			while [ -z $path ]; do
+			while [ -z "$path" ]; do
 				read -r -e -p "VVV install directory: " path
 
 				# Make sure directory is actually a VVV root
@@ -356,20 +374,22 @@ get_vvv_path(){
 		current_dir=$(pwd)
 		if [ -e "$current_dir/Vagrantfile" ]; then
 			path=$(pwd)
-		elif [ -e ~/Sites/Vagrantfile ] && [ -z $force_path ]; then
+		elif [ -e ~/Sites/Vagrantfile ] && [ -z "$force_path" ]; then
 			path=~/Sites
-		elif [ -e ~/vagrant/Vagrantfile ] && [ -z $force_path ]; then
+		elif [ -e ~/Sites/Vagrant/Vagrantfile ] && [ -z "$force_path" ]; then
+			path=~/Sites/Vagrant
+		elif [ -e ~/vagrant/Vagrantfile ] && [ -z "$force_path" ]; then
 			path=~/vagrant
-		elif [ -e ~/vagrant-local/Vagrantfile ] && [ -z $force_path ]; then
+		elif [ -e ~/vagrant-local/Vagrantfile ] && [ -z "$force_path" ]; then
 			path=~/vagrant-local
-		elif [ -e ~/projects/vvv/Vagrantfile ] && [ -z $force_path ]; then
+		elif [ -e ~/projects/vvv/Vagrantfile ] && [ -z "$force_path" ]; then
 			path=~/projects/vvv
-		elif [ -e ~/working/vvv/Vagrantfile ] && [ -z $force_path ]; then
+		elif [ -e ~/working/vvv/Vagrantfile ] && [ -z "$force_path" ]; then
 			path=~/working/vvv
-		elif [ -e ~/vvv/Vagrantfile ] && [ -z $force_path ]; then
+		elif [ -e ~/vvv/Vagrantfile ] && [ -z "$force_path" ]; then
 			path=~/vvv
 		else
-			while [ -z $path ]; do
+			while [ -z "$path" ]; do
 				read -r -e -p "VVV install directory: " path
 
 				# Make sure directory is actually a VVV root
@@ -387,13 +407,13 @@ get_vvv_path(){
 get_list_sites() {
 	clean_saved=$clean
 	clean="true"
-	sites=$(list_sites)
+	list_sites
 	clean=$clean_saved
 }
 
 list_sites() {
-	cd "$path"/www
-	find . -maxdepth 1 -mindepth 1 -type d -print0 | while IFS= read -r -d '' filename; do
+	cd "$path"/"$sites_folder"
+	find . -maxdepth 2 -mindepth 1 -type d -print0 | while IFS= read -r -d '' filename; do
 		filename=${filename:2}
 		if [[ $filename != 'default' && $filename != 'phpcs' && $filename != 'wp-cli' ]]; then
 			if [[ $filename = 'wordpress-default' || $filename = 'wordpress-develop' || $filename = 'wordpress-trunk' ]]; then
@@ -406,20 +426,20 @@ list_sites() {
 				fi
 
 				if [[ ! $clean = "true" ]]; then
-					printf "	* %-30s %s %s\n" "${green}$filename${normal}" "${yellow}($url)${normal}" "${cyan}[VVV default]${normal}"
+					printf "	* %-30s %s %s\n" "${green}$filename${normal}" "${yellow}( $url )${normal}" "${cyan}[VVV default]${normal}"
 				fi
 			else
-				# @TODO fix having Multiple URLs in vvv-hosts
-				url=$(<"$path"/www/"$filename"/vvv-hosts)
-				url=$(echo "$url" | sed -e 's/#.*$//' -e '/^$/d')
-				urls=$(echo "$url" | wc -l)
-				if (( "$urls" > 1 )); then
-					url="$(echo "$url" | paste -d ' ' - -)"
-				fi
-				if [[ ! $clean = "true" ]]; then
-					printf "	* %-30s %s\n" "${green}$filename${normal}" "${yellow}($url)${normal}"
-				else
-					printf "$filename\n"
+				if [[ -f "$path"/"$sites_folder"/"$filename"/vvv-hosts ]]; then
+					url=$(<"$path"/"$sites_folder"/"$filename"/vvv-hosts)
+					url=$(echo "$url" | sed -e 's/#.*$//' -e '/^$/d')
+					urls=$(echo "$url" | wc -l)
+					if (( "$urls" > 1 )); then
+						url="$(echo "$url" | paste -d ' ' - -)"
+					fi
+					if [[ ! $clean = "true" ]]; then
+						printf "	* %-30s %s\n" "${green}$filename${normal}" "${yellow}( $url )${normal}"
+
+					fi
 				fi
 			fi
 		fi
@@ -442,8 +462,8 @@ site_creation_questions() {
 		if [ -f "$path/config/nginx-config/sites/$site.conf" ]; then
 			error "Site $site already exists. Remove config/nginx-config/sites/$site.conf to run setup again."
 			unset site
-		elif [ -d "$path/www/$site" ]; then
-			warning "Directory $path/www/$site already exists. Existing VVV configuration files will be overwritten."
+		elif [ -d "$path/"$sites_folder"/$site" ]; then
+			warning "Directory $path/"$sites_folder"/$site already exists. Existing VVV configuration files will be overwritten."
 		fi
 	fi
 	while [ -z "$site" ]; do
@@ -455,8 +475,8 @@ site_creation_questions() {
 		elif [ -f "$path/config/nginx-config/sites/$site.conf" ]; then
 			error "Site $site already exists. Remove config/nginx-config/sites/$site.conf to run setup again."
 			unset site
-		elif [ -d "$path/www/$site" ]; then
-			warning "Directory $path/www/$site already exists. Existing VVV configuration files will be overwritten."
+		elif [ -d "$path/"$sites_folder"/$site" ]; then
+			warning "Directory $path/"$sites_folder"/$site already exists. Existing VVV configuration files will be overwritten."
 		fi
 	done
 
@@ -554,10 +574,10 @@ site_creation_questions() {
 			install_text='multisite-install --subdomains'
 		fi
 
-		if [[ ! -z $git_repo && -d "$path/www/$site" ]]; then
-			error "$path/www/$site already exists. Skipping git clone."
+		if [[ ! -z $git_repo && -d "$path/"$sites_folder"/$site" ]]; then
+			error "$path/"$sites_folder"/$site already exists. Skipping git clone."
 			unset git_repo
-		elif [[ -z "$git_repo" && ! -d "$path/www/$site" ]]; then
+		elif [[ -z "$git_repo" && ! -d "$path/"$sites_folder"/$site" ]]; then
 			if [ "$use_defaults" = "false" ]; then
 				prompt "Git repo to clone as wp-content (leave blank to skip)"
 				read -r git_repo
@@ -568,6 +588,13 @@ site_creation_questions() {
 			if [ "$use_defaults" = "false" ]; then
 				prompt "Local SQL file to import for database (leave blank to skip)"
 				read -r db_import
+			fi
+		fi
+
+		if [ -z "$remove_defaults" ]; then
+			if [ "$use_defaults" = "false" ]; then
+				prompt "Remove default themes and plugins? (y/N)"
+				read -r remove_defaults
 			fi
 		fi
 
@@ -619,7 +646,7 @@ confirm_site_creation() {
 	# =============================================================================
 	info "\nAbout to perform the following:"
 	# @ TODO
-	echo -e "* Halt Vagrant (if running)\n* Create directory $site in $path/www\n* Create files vvv-init.sh, wp-cli.yml, and vvv-hosts in directory $site\n* Create file $site.conf in $path/config/nginx-config/sites"
+	echo -e "* Halt Vagrant (if running)\n* Create directory $site in $path/"$sites_folder"\n* Create files vvv-init.sh, wp-cli.yml, and vvv-hosts in directory $site\n* Create file $site.conf in $path/config/nginx-config/sites"
 	if [[ -z "$files_only" ]]; then
 		echo -e "* Run \`vagrant up --provision\` to initialize site"
 	else
@@ -653,15 +680,15 @@ confirm_site_creation() {
 create_site_files(){
 	# Create site folder with vvv-init.sh file
 	# =============================================================================
-	cd "$path"/www
+	cd "$path"/"$sites_folder"
 	info "Creating site directory, wp-cli.yml, and vvv-init.sh file... "
 	if [ ! -d "$site" ]; then
-		mkdir $site
+		mkdir "$site"
 	fi
 	cd "$site"
 
 	if [ "$no_wp" = "false" ]; then
-		printf "path: $web_root" > wp-cli.yml
+		printf "path: %s" "$web_root" > wp-cli.yml
 	fi
 
 	wp_debug_text=''
@@ -674,12 +701,41 @@ PHP"
 
 	blueprint_text=''
 	if [[ ! -z "$blueprint" ]]; then
-		cp "$path"/vv-blueprints.json "$path"/www/"$site"/vv-blueprints.json
+		cp "$path"/vv-blueprints.json "$path"/"$sites_folder"/"$site"/vv-blueprints.json
 		blueprint_text="curl -o vv-install -s https://raw.githubusercontent.com/bradp/vv/vv-install/vv-install && php vv-install $blueprint $web_root && rm vv-blueprints.json"
 	fi
 
 	if [[ ! -z "$db_import" ]]; then
-		cp "$db_import" "$path"/www/"$site"/"$site".sql
+		cp "$db_import" "$path"/"$sites_folder"/"$site"/"$site".sql
+	fi
+
+	db_init=""
+	if [[ ! -z "$db_import" ]]; then
+		db_init="wp db import ../$site.sql --allow-root && rm ../$site.sql"
+	fi
+
+	if [ "$no_wp_with_db" = "true" ]; then
+		if [ ! -e "$path"/database/init-custom.sql ]; then
+			touch "$path"/database/init-custom.sql
+		fi
+		printf "\nCREATE DATABASE IF NOT EXISTS \`%s\`;\n"\
+"GRANT ALL PRIVILEGES ON \`%s\`.* TO 'wp'@'localhost' IDENTIFIED BY 'wp';\n" "$db_name" "$db_name" >> "$path"/database/init-custom.sql
+
+		if [[ ! -z "$db_import" ]]; then
+			{
+				echo "if [ ! -d \"$web_root/wp-admin\" ]; then"
+				echo "	echo 'Making the correct directories and adding DB in $site/$web_root...'"
+				echo "	if [ ! -d \"./$web_root\" ]; then"
+				echo "		mkdir ./$web_root"
+				echo "	fi"
+				echo "	cd ./$web_root"
+				echo "	$db_init"
+				echo "	"
+				echo "	cd -"
+				echo "$blueprint_text"
+				echo "fi"
+			} >> vvv-init.sh
+		fi
 	fi
 
 	if [ "$no_wp" = "false" ]; then
@@ -689,9 +745,9 @@ PHP"
 			touch "$path"/database/init-custom.sql
 		fi
 
-		db_init=""
-		if [[ ! -z "$db_import" ]]; then
-			db_init="wp db import ../$site.sql --allow-root && rm ../$site.sql"
+		maybe_remove_defaults=""
+		if [[ "$remove_defaults" = "y" ]]; then
+			maybe_remove_defaults="wp theme delete twentythirteen --allow-root; wp theme delete twentyfourteen --allow-root; wp theme delete twentyfifteen --allow-root; wp plugin delete hello --allow-root; wp plugin delete aksimet --allow-root; git checkout HEAD ."
 		fi
 
 		install_method="wp core download --allow-root $installversion"
@@ -717,6 +773,7 @@ PHP"
 			echo "	$core"
 			echo "	$add_placeholder_content"
 			echo "	$db_init"
+			echo "  $maybe_remove_defaults"
 			echo "	"
 			echo "	cd -"
 			echo "$blueprint_text"
@@ -726,16 +783,16 @@ PHP"
 
 	echo "Done"
 
-	# Add vvv-hosts file for domain in the site's www root
+	# Add vvv-hosts file for domain in the site's "$sites_folder" root
 	# =============================================================================
-	cd "$path"/www/"$site"
+	cd "$path"/"$sites_folder"/"$site"
 	info "Adding $domain to new vvv-hosts file... "
 	touch vvv-hosts
 	printf "%s\n" "$domain" >> vvv-hosts
 	echo "Done"
 
 	if [ ! -z "$git_repo" ]; then
-		git clone --recursive $git_repo $web_root/wp-content
+		git clone --recursive "$git_repo" $web_root/wp-content
 	fi
 
 	# Add site conf file to nginx-config
@@ -747,6 +804,8 @@ PHP"
 	if [[ $multisite = 'y' ]] && [[ $ms_type = 'subdomain' ]]; then
 		nginx_domain_text="$domain $multisite_domains"
 	fi
+	xip_domain=" ~^"$site"\\\.\\\d+\\\.\\\d+\\\.\\\d+\\\.\\\d+\\\.xip\\\.io$"
+	nginx_domain_text="$nginx_domain_text""$xip_domain"
 
 	sed -e "s/testserver\.com/$nginx_domain_text/" \
 		-e "s|wordpress-local|$site/$web_root|" local-nginx-example.conf-sample > "$site".conf
@@ -778,7 +837,7 @@ creation_success_message() {
 	fi
 
 	success "New VVV Site Setup: Done!"
-	echo "Directory: $path/www/$site"
+	echo "Directory: $path/"$sites_folder"/$site"
 	echo "URL:       $domain"
 	echo "Username:  $username"
 	echo "Password:  $password"
@@ -794,8 +853,8 @@ create_site() {
 }
 
 not_valid_site() {
-	if [[ -z $site || ! -d "$path/www/$site" ]]; then
-		error "You must enter a valid directory from $path/www/."
+	if [[ -z $site || ! -d "$path/"$sites_folder"/$site" ]]; then
+		error "You must enter a valid directory from $path/"$sites_folder"/."
 		unset site
 	elif [[ $site = 'wordpress-default' || $site = 'wordpress-develop' || $site = 'wordpress-trunk' || $site = 'default' || $site = 'phpcs' || $site = 'vvv-hosts' || $site = 'wp-cli' || $site = '.gitshow' ]]; then
 		error "This script can't delete the default VVV folders."
@@ -817,7 +876,7 @@ remove_site() { # @TODO refactor this if we need to
 		not_valid_site
 	done
 
-	info "\nAbout to perform the following:\n\n* Halt Vagrant (if running)\n* Delete directory $site in $path/www\n* Delete file $site.conf in $path/config/nginx-config/sites\n* Remove database creation commands from init-custom.sql\n* Remove any deployments set up with vv\n"
+	info "\nAbout to perform the following:\n\n* Halt Vagrant (if running)\n* Delete directory $site in $path/"$sites_folder"\n* Delete file $site.conf in $path/config/nginx-config/sites\n* Remove database creation commands from init-custom.sql\n* Remove any deployments for $site set up with vv\n"
 	while [ -z "$continue_delete" ]; do
 		prompt "Continue (y/n) "
 		read -r continue_delete
@@ -829,7 +888,7 @@ remove_site() { # @TODO refactor this if we need to
 
 			# Delete the site folder
 			info "Removing directory $site... "
-			rm -rf "$path"/www/"$site"
+			rm -rf "$path"/"$sites_folder"/"$site"
 			echo "Done"
 
 			# Remove the nginx conf file
@@ -977,7 +1036,7 @@ echo "$(sed  '$ d' < "$path/Vagrantfile")" > "$path/Vagrantfile"
 	echo "		push.passive =\"$passive\""
 	echo "		push.secure =\"$secure\""
 	echo "		push.destination =\"$destination\""
-	echo "		push.dir = \"$web_root\""
+	echo "		push.dir = \"$path/"$sites_folder"/$site/htdocs\""
 	echo "		push.exclude = \"wp-config.php\""
 	echo "	end"
 	echo "# end-vv-$site-$deployment_name"
@@ -1019,36 +1078,33 @@ create_blueprints() {
 
 parse_the_args() {
 
-    if [ ! -z "$list" ]; then
-        list_sites
-    fi
-    if [ ! -z "$create" ]; then
-        create_site
-    fi
-    if [ ! -z "$remove" ]; then
-        remove_site
-    fi
-    if [ ! -z "$deployment_setup" ]; then
-    	deployment_setup
-    fi
-    if [ ! -z "$deployment_remove" ]; then
-    	deployment_removal_prompt
-    fi
+    	if [ ! -z "$list" ]; then
+        	list_sites
+   	fi
+    	if [ ! -z "$create" ]; then
+        	create_site
+    	fi
+    	if [ ! -z "$remove" ]; then
+        	remove_site
+    	fi
+   	if [ ! -z "$deployment_setup" ]; then
+    		deployment_setup
+    	fi
+    	if [ ! -z "$deployment_remove" ]; then
+    		deployment_removal_prompt
+    	fi
    	if [ ! -z "$deployment_config" ]; then
    		deployment_config
    	fi
-    if [ ! -z "$blueprint_init" ]; then
-    	create_blueprints
-    fi
-   	if [ ! -z "$lets_update" ]; then
+   	 if [ ! -z "$blueprint_init" ]; then
+		create_blueprints
+	fi
+	if [ ! -z "$lets_update" ]; then
    		install_update
+	fi
    	if [ ! -z "$force_update" ]; then
    		vv_bootstrap_update
 	fi
-   	else
-   		check_for_update
-   	fi
-
 }
 
 check_args() {
@@ -1103,7 +1159,7 @@ check_args() {
 				email=$2
 				shift 2
 				;;
-			--git-repo|--git_repo|--gitrepo)
+			--git-repo|--git_repo|--gitrepo|-gr)
 				argument_expected "$1" "$2"
 				git_repo=$2
 				shift 2
@@ -1166,6 +1222,11 @@ check_args() {
 				db_import=$2
 				shift 2
 				;;
+			-fsf|--force-sites-folder)
+				argument_expected "$1" "$2"
+				sites_folder="$2/"
+				shift 2
+				;;
 			-r|-rm|--rm|rm|--remove|remove|--delete|delete|--teardown|teardown)
 				remove="true"
 				shift
@@ -1195,7 +1256,6 @@ check_args() {
 				shift
 				;;
 			--version)
-				check_for_update
 				version
 				shift
 				;;
@@ -1211,8 +1271,11 @@ check_args() {
 				placeholder_content="y"
 				shift
 				;;
+			--rd|--remove-defaults)
+				remove_defaults="y"
+				shift
+				;;
 			--about|about)
-				check_for_update
 				about
 				exit
 				shift
@@ -1250,7 +1313,12 @@ check_args() {
 				no_wp="true"
 				shift
 				;;
-			--wpskeleton|--skel)
+			--blank-with-db)
+				no_wp="true"
+				no_wp_with_db="true"
+				shift
+				;;
+			--wpskeleton|--skel,-skel)
 				wpskeleton="true"
 				shift
 				;;
@@ -1267,7 +1335,6 @@ check_args() {
 
 	get_vvv_path
 	parse_the_args
-
 	exit 0
 }
 
@@ -1280,10 +1347,13 @@ main() {
 	fi
 
 	check_for_config_file
-
+	check_for_update
 	use_defaults="false"
 	no_wp="false"
+	no_wp_with_db="false"
+	sites_folder="www"
 	check_args "$@"
+
 }
 
 main "$@"
